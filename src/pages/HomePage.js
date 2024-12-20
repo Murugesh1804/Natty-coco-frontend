@@ -1,17 +1,16 @@
 // src/screens/HomeScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
-  FlatList, 
-  Image, 
-  StyleSheet, 
+  FlatList,
+  Image,
+  StyleSheet,
   SafeAreaView,
   ScrollView,
-  Dimensions,
-  Animated,
-  Pressable
+  Alert,
+  Animated
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -57,9 +56,7 @@ const HomeScreen = ({ navigation }) => {
     }
   ]);
 
-  const [scrollY] = useState(new Animated.Value(0));
   const [cartCount, setCartCount] = useState(0);
-  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('accessToken');
@@ -67,43 +64,30 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const renderPromotionItem = ({ item }) => (
-    <Pressable 
-      style={({ pressed }) => [
-        styles.promotionCard,
-        pressed && { transform: [{ scale: 0.98 }] }
-      ]}
+    <TouchableOpacity 
+      style={styles.promotionCard}
       onPress={() => Alert.alert('Promotion', item.description)}
     >
       <Image 
         source={{ uri: item.image }} 
         style={styles.promotionImage}
-        resizeMode="cover"
       />
       <View style={styles.promotionOverlay}>
         <Text style={styles.promotionTitle}>{item.title}</Text>
         <Text style={styles.promotionDescription}>{item.description}</Text>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 
   const renderProductItem = ({ item }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.productCard,
-        pressed && { transform: [{ scale: 0.98 }] }
-      ]}
-      onPress={() => {
-        setSelectedProduct(item);
-        navigation.navigate('Payment', { product: item });
-      }}
+    <TouchableOpacity
+      style={styles.productCard}
+      onPress={() => navigation.navigate('Payment', { product: item })}
     >
-      <View style={styles.discountBadge}>
-        <Text style={styles.discountText}>{item.discount}</Text>
-      </View>
+      <Text style={styles.discountText}>{item.discount}</Text>
       <Image 
         source={{ uri: item.image }} 
         style={styles.productImage}
-        resizeMode="cover" 
       />
       <View style={styles.productDetails}>
         <Text style={styles.productName}>{item.name}</Text>
@@ -114,10 +98,8 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.reviews}>({item.reviews} reviews)</Text>
         </View>
         <View style={styles.priceContainer}>
-          <View>
-            <Text style={styles.originalPrice}>₹{item.originalPrice}</Text>
-            <Text style={styles.price}>₹{item.price}</Text>
-          </View>
+          <Text style={styles.originalPrice}>₹{item.originalPrice}</Text>
+          <Text style={styles.price}>₹{item.price}</Text>
           <TouchableOpacity 
             style={styles.buyButton}
             onPress={() => {
@@ -129,25 +111,19 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
-
-  const headerHeight = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [80, 50],
-    extrapolate: 'clamp',
-  });
 
   return (
     <SafeAreaView style={styles.container}>
-      <Animated.View style={[styles.header, { height: headerHeight }]}>
+      <View style={styles.header}>
         <Text style={styles.headerTitle}>Chicken Shop</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity 
             style={styles.cartButton}
             onPress={() => Alert.alert('Cart', 'Cart functionality coming soon!')}
           >
-            <Icon name="shopping-cart" size={24} color="#FF9800" />
+            <Icon name="shopping-cart" size={24} color="#000" />
             {cartCount > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{cartCount}</Text>
@@ -158,39 +134,29 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.ScrollView
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView>
         <View style={styles.promotionsContainer}>
           <Text style={styles.sectionTitle}>Special Offers</Text>
           <FlatList
             horizontal
-            showsHorizontalScrollIndicator={false}
             data={promotions}
             renderItem={renderPromotionItem}
             keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.promotionsList}
+            showsHorizontalScrollIndicator={false}
           />
         </View>
 
         <View style={styles.productsContainer}>
           <Text style={styles.sectionTitle}>Fresh Products</Text>
-          <FlatList
-            data={products}
-            renderItem={renderProductItem}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.productList}
-            scrollEnabled={false}
-          />
+          {products.map(item => (
+            <View key={item.id}>
+              {renderProductItem({item})}
+            </View>
+          ))}
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -198,39 +164,33 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF3E0'
+    backgroundColor: '#fff'
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: '#FFF',
-    elevation: 4,
-    shadowColor: '#FF9800',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    zIndex: 1000
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd'
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF9800'
+    fontSize: 20,
+    fontWeight: 'bold'
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center'
   },
   cartButton: {
-    marginRight: 15,
-    padding: 5
+    marginRight: 15
   },
   cartBadge: {
     position: 'absolute',
     right: -5,
     top: -5,
-    backgroundColor: '#F57C00',
+    backgroundColor: 'red',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -239,39 +199,30 @@ const styles = StyleSheet.create({
   },
   cartBadgeText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold'
+    fontSize: 12
   },
   logoutButton: {
-    backgroundColor: '#FF5722',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8
+    backgroundColor: '#ddd',
+    padding: 8,
+    borderRadius: 5
   },
   logoutText: {
-    color: 'white',
-    fontWeight: 'bold'
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    padding: 15,
-    color: '#E65100'
+    color: '#000'
   },
   promotionsContainer: {
     marginTop: 10
   },
-  promotionsList: {
-    paddingHorizontal: 10
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    padding: 15
   },
   promotionCard: {
-    width: Dimensions.get('window').width * 0.8,
+    width: 300,
     height: 150,
-    marginHorizontal: 5,
-    borderRadius: 15,
-    overflow: 'hidden',
-    elevation: 5,
-    backgroundColor: '#FFF'
+    marginHorizontal: 10,
+    borderRadius: 10,
+    overflow: 'hidden'
   },
   promotionImage: {
     width: '100%',
@@ -282,82 +233,49 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255,152,0,0.8)',
-    padding: 15
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10
   },
   promotionTitle: {
     color: 'white',
-    fontSize: 18,
     fontWeight: 'bold'
   },
   promotionDescription: {
-    color: 'white',
-    fontSize: 14
-  },
-  productsContainer: {
-    marginTop: 20
-  },
-  productList: {
-    padding: 10
+    color: 'white'
   },
   productCard: {
+    margin: 10,
     backgroundColor: 'white',
-    borderRadius: 20,
-    marginBottom: 15,
-    elevation: 4,
-    shadowColor: '#FF9800',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    position: 'relative'
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#FF5722',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    zIndex: 1
-  },
-  discountText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12
+    borderRadius: 10,
+    elevation: 2
   },
   productImage: {
     width: '100%',
     height: 200,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10
   },
   productDetails: {
-    padding: 15
+    padding: 10
   },
   productName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#E65100'
+    fontSize: 16,
+    fontWeight: 'bold'
   },
   productDescription: {
-    color: '#795548',
-    marginVertical: 5,
-    fontSize: 14
+    color: '#666',
+    marginVertical: 5
   },
   ratingContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 5
+    alignItems: 'center'
   },
   rating: {
-    marginLeft: 5,
-    fontWeight: 'bold',
-    color: '#F57C00'
+    marginLeft: 5
   },
   reviews: {
-    marginLeft: 5,
-    color: '#795548'
+    color: '#666',
+    marginLeft: 5
   },
   priceContainer: {
     flexDirection: 'row',
@@ -366,30 +284,30 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   originalPrice: {
-    fontSize: 16,
-    color: '#795548',
-    textDecorationLine: 'line-through'
+    textDecorationLine: 'line-through',
+    color: '#666'
   },
   price: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF9800'
+    fontSize: 18,
+    fontWeight: 'bold'
   },
   buyButton: {
-    backgroundColor: '#FF9800',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#FF9800',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    backgroundColor: '#000',
+    padding: 8,
+    borderRadius: 5
   },
   buyButtonText: {
+    color: 'white'
+  },
+  discountText: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'red',
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16
+    padding: 5,
+    borderRadius: 5,
+    zIndex: 1
   }
 });
 

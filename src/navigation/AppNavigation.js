@@ -6,6 +6,7 @@ import RegisterScreen from '../pages/RegisterPage';
 import OTPVerificationScreen from '../pages/OTPVerification';
 import HomeScreen from '../pages/HomePage';
 import PaymentScreen from '../pages/PaymentPage';
+// import MapScreen from '../pages/Map';
 
 const Stack = createStackNavigator();
 
@@ -42,6 +43,11 @@ const AppNavigator = () => {
           component={PaymentScreen} 
           options={{ title: 'Checkout' }}
         />
+        {/* <Stack.Screen 
+          name="Map" 
+          component={MapScreen} 
+          options={{ title: 'Location' }}
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );

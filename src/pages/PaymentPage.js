@@ -102,12 +102,7 @@ const PaymentPage = ({ navigation, route }) => {
 
       if (response.data.message === 'Order created successfully') {
         console.log('Order created successfully');
-        navigation.navigate('Map', {
-          userLocation: {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude
-          }
-        });
+        // navigation.navigate('Map');
       } else {
         setError('Failed to create order');
         startShake();
@@ -139,7 +134,7 @@ const PaymentPage = ({ navigation, route }) => {
         key: 'rzp_test_epPmzNozAIcJcC', 
         amount: product.price * 100,
         currency: 'INR',
-        name: 'Natty-coco',
+        name: 'Naticoco',
         description: product.name,
         order_id: order.id,
         handler: async (response) => {

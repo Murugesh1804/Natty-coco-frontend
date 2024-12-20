@@ -13,7 +13,8 @@ import {
   Dimensions,
   Animated,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +24,11 @@ const LoginPage = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetStep, setResetStep] = useState(1); // 1: email input, 2: token+password input
   
   const shakeAnimation = new Animated.Value(0);
 
@@ -44,6 +50,35 @@ const LoginPage = ({ navigation }) => {
         useNativeDriver: true
       })
     ]).start();
+  };
+
+  const handleSendResetToken = async () => {
+    try {
+      const response = await axios.post('http://localhost:3500/auth/reset-password', {
+        email: resetEmail
+      });
+      Alert.alert('Success', 'Reset token has been sent to your email');
+      setResetStep(2);
+    } catch (err) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to send reset token');
+    }
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    try {
+      const response = await axios.patch('http://localhost:3500/auth/resetpass-otp', {
+        token: resetToken,
+        pwd: newPassword
+      });
+      Alert.alert('Success', 'Password has been reset successfully');
+      setShowResetModal(false);
+      setResetStep(1);
+      setResetEmail('');
+      setResetToken('');
+      setNewPassword('');
+    } catch (err) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to reset password');
+    }
   };
 
   const handleLogin = async () => {
@@ -74,9 +109,8 @@ const LoginPage = ({ navigation }) => {
       });
       const userdata = response.data
       await AsyncStorage.setItem('user', JSON.stringify(userdata));
-    await AsyncStorage.setItem('userId', JSON.stringify(userdata.user.userId));
-     await AsyncStorage.setItem('accessToken', userdata.accessToken);
-
+      await AsyncStorage.setItem('userId', JSON.stringify(userdata.user.userId));
+      await AsyncStorage.setItem('accessToken', userdata.accessToken);
       
       Alert.alert('Welcome Back!', 'Login successful!');
       navigation.replace('Home');
@@ -158,6 +192,13 @@ const LoginPage = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity 
+            onPress={() => setShowResetModal(true)}
+            style={styles.forgotButton}
+          >
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
             onPress={() => navigation.navigate('Register')}
             style={styles.registerButton}
           >
@@ -165,6 +206,69 @@ const LoginPage = ({ navigation }) => {
               New to Chicken Shop? <Text style={styles.registerHighlight}>Register</Text>
             </Text>
           </TouchableOpacity>
+
+          <Modal
+            visible={showResetModal}
+            animationType="slide"
+            transparent={true}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  {resetStep === 1 ? 'Reset Password' : 'Enter Reset Token'}
+                </Text>
+                
+                {resetStep === 1 ? (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your email"
+                    value={resetEmail}
+                    onChangeText={setResetEmail}
+                    keyboardType="email-address"
+                  />
+                ) : (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter reset token"
+                      value={resetToken}
+                      onChangeText={setResetToken}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry
+                    />
+                  </>
+                )}
+
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={resetStep === 1 ? handleSendResetToken : handleResetPasswordSubmit}
+                >
+                  <Text style={styles.buttonText}>
+                    {resetStep === 1 ? 'Send Reset Token' : 'Reset Password'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setShowResetModal(false);
+                    setResetStep(1);
+                    setResetEmail('');
+                    setResetToken('');
+                    setNewPassword('');
+                  }}
+                >
+                  <Text style={styles.closeButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
         </KeyboardAvoidingView>
       </LinearGradient>
     </SafeAreaView>
@@ -267,6 +371,42 @@ const styles = StyleSheet.create({
   registerHighlight: {
     fontWeight: 'bold',
     textDecorationLine: 'underline',
+  },
+  forgotButton: {
+    marginTop: 15,
+    padding: 10,
+  },
+  forgotText: {
+    color: '#fff',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  closeButton: {
+    marginTop: 15,
+    padding: 10,
+  },
+  closeButtonText: {
+    color: '#FF8C00',
+    textAlign: 'center',
+    fontWeight: 'bold',
   }
 });
 
